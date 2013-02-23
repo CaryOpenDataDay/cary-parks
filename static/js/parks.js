@@ -19,6 +19,9 @@ function lookupAddress(address) {
 }
 
 $(document).ready(function() {
+
+    
+
     $('#find-button').click(function(e) {
         e.preventDefault();
         map.locate({setView: true, maxZoom: 16});
@@ -30,6 +33,8 @@ $(document).ready(function() {
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
         maxZoom: 18
     }).addTo(map);
+    var group = new L.FeatureGroup();
+    group.addTo(map);
 
     function onLocationFound(e) {
         var radius = e.accuracy / 2;
@@ -59,10 +64,12 @@ $(document).ready(function() {
                 format: "jsondict"
             }, 
             success: function(data){
+              group.clearLayers();
               $.each(data, function(index, row) {
                 var markerLocation = new L.LatLng(row['Lat'], row['Lon']);
                 bounds.extend(markerLocation);
-                var marker = L.marker(markerLocation).addTo(map).bindPopup(row["NAME"]);
+                var marker = L.marker(markerLocation).bindPopup(row["NAME"]);
+                group.addLayer(marker);
               });
               map.fitBounds(bounds);
             }
