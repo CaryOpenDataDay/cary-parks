@@ -19,14 +19,6 @@ function lookupAddress(address) {
 }
 
 $(document).ready(function() {
-
-    
-
-    $('#find-button').click(function(e) {
-        e.preventDefault();
-        map.locate({setView: true, maxZoom: 16});
-    });
-
     var map = L.map('map');
     var url = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     L.tileLayer(url, {
@@ -36,11 +28,26 @@ $(document).ready(function() {
     var group = new L.FeatureGroup();
     group.addTo(map);
 
+    var gps = new L.Marker();
+
     function onLocationFound(e) {
         var radius = e.accuracy / 2;
-        L.marker(e.latlng).addTo(map)
-            .bindPopup("You are within " + radius + " meters from this point").openPopup();
-        L.circle(e.latlng, radius).addTo(map);
+        gps = L.marker(e.latlng).bindPopup("You are within " + radius + " meters from this point").openPopup();
+        group.addLayer(gps);
+    }
+
+    function onLocationError(e) {
+        alert(e.message);
+    }
+
+    map.on('locationfound', onLocationFound);
+    map.on('locationerror', onLocationError);
+
+    map.locate({setView: true, maxZoom: 16});
+
+    $('#find-button').click(function(e) {
+        e.preventDefault();
+        
         var where = [];
         var sqlselect = "select * from swdata"; 
         $(".options:checked").each(function(i, input) {
@@ -49,7 +56,6 @@ $(document).ready(function() {
         if ($(where).length > 0) {
             sqlselect = sqlselect + " WHERE " + where.join(' AND ');
         }
-        console.log(sqlselect);
         var apiurl = "https://api.scraperwiki.com/api/1.0/datastore/sqlite";            
         var srcname = "cary_nc_parks"; 
 
@@ -64,24 +70,20 @@ $(document).ready(function() {
                 format: "jsondict"
             }, 
             success: function(data){
+              console.log(data);
               group.clearLayers();
+              group.addLayer(gps);
               $.each(data, function(index, row) {
                 var markerLocation = new L.LatLng(row['Lat'], row['Lon']);
                 bounds.extend(markerLocation);
                 var marker = L.marker(markerLocation).bindPopup(row["NAME"]);
                 group.addLayer(marker);
+                console.log(marker);
               });
               map.fitBounds(bounds);
+              gps.openPopup();
             }
         });
-    }
-
-    function onLocationError(e) {
-        alert(e.message);
-    }
-
-    map.on('locationfound', onLocationFound);
-    map.on('locationerror', onLocationError);
-
-    map.locate({setView: true, maxZoom: 16});
+        
+    });
 });
